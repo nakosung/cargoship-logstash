@@ -1,3 +1,5 @@
+_ = require 'underscore'
+
 module.exports = (port) ->
 	modules = (m,next) -> next m
 	modules.signature = 'logstash'
