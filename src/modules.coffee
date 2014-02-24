@@ -18,6 +18,7 @@ module.exports = (port) ->
 					"@timestamp" : new Date().toISOString()
 					"@message" : msg
 					"@type" : ch
+					"@user" : ship.user
 				_.extend json, meta
 
 				client.rpush 'logstash', JSON.stringify json
