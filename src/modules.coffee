@@ -1,25 +1,26 @@
 _ = require 'underscore'
-
-attached = undefined
+redis = require 'redis'
 
 module.exports = (port) ->
 	modules = (m,next) -> next m
 	modules.signature = 'logstash'
 
 	modules.preuse = (ship) ->
-		logstash = port or process.env.LOGSTASH_PORT
+		logstash = port or process.env.LOGSTASH_REDIS_PORT
 		if logstash?
-			winston = require 'winston'
+			{host,port} = (require 'docker-port-parser') logstash
+			client = redis.createClient port, host
 
-			unless attached
-				attached = logstash
-				require 'winston-logstash'
-
-				winston.add winston.transports.Logstash, (require 'docker-port-parser') logstash
-			else if attached != logstash
-				winston.error "inconsistent logstash", old:attached, cur:logstash
-
+			old = ship.log.bind ship
+			
 			ship.log = (ch,msg,meta) ->
-				winston.log ch, msg, _.extend ship:ship.user, meta
+				json = 
+					"@timestamp" : new Date().toISOString()
+					"@message" : msg
+					"@type" : ch
+				_.extend json, meta
+
+				client.rpush 'logstash', JSON.stringify json
+				old ch,msg,meta
 
 	modules
